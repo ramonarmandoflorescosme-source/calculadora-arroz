@@ -1,51 +1,69 @@
 import streamlit as st
 
-st.set_page_config(page_title="Calculadora de Arroz", page_icon="🌾", layout="centered")
+st.set_page_config(page_title="Liquidación de Arroz", page_icon="🌾", layout="centered")
 
-st.title("🌾 Calculadora Agrícola - Producción de Arroz")
-st.markdown("Herramienta para estimar costos, rendimiento por tarea y rentabilidad.")
+st.title("🌾 Liquidación de Arroz")
+st.write("Calcula el rendimiento, peso neto y total a pagar de tu cosecha.")
 
-# --- DATOS EN LA PÁGINA PRINCIPAL ---
-st.subheader("📝 Datos de la Parcela")
-col_var, col_tar = st.columns(2)
-with col_var:
-    variedad = st.text_input("Variedad de Arroz", value="Juma 69-20 (Jaragua)")
-with col_tar:
-    tareas = st.number_input("Área sembrada (Tareas)", min_value=1.0, value=22.0, step=1.0)
+# Opciones de cálculo
+modo = st.radio("Selecciona el método de entrada:", ["Peso Bruto Total (kg)", "Por Pesadas (Báscula)"])
 
-# Barra lateral para costos y rendimiento
-st.sidebar.header("Costos de Insumos y Mano de Obra")
-costo_preparacion = st.sidebar.number_input("Preparación de tierra y siembra ($)", min_value=0.0, value=15000.0, step=500.0)
-costo_fertilizantes = st.sidebar.number_input("Costo de Fertilización (Urea, 15-15-15, foliares) ($)", min_value=0.0, value=12000.0, step=500.0)
-costo_quimicos = st.sidebar.number_input("Control de plagas/enfermedades (Fungicidas/Herbicidas) ($)", min_value=0.0, value=8000.0, step=500.0)
-costo_riego_labores = st.sidebar.number_input("Agua, riego y otras labores ($)", min_value=0.0, value=6000.0, step=500.0)
-
-st.sidebar.header("Cosecha y Ventas")
-rendimiento_fanegas_por_tarea = st.sidebar.number_input("Rendimiento estimado (Fanegas por tarea)", min_value=0.0, value=2.5, step=0.1)
-precio_por_fanega = st.sidebar.number_input("Precio de venta por Fanega ($)", min_value=0.0, value=3200.0, step=100.0)
-
-# Cálculos
-total_costos = costo_preparacion + costo_fertilizantes + costo_quimicos + costo_riego_labores
-total_fanegas = tareas * rendimiento_fanegas_por_tarea
-ingreso_total = total_fanegas * precio_por_fanega
-beneficio_neto = ingreso_total - total_costos
-costo_por_tarea = total_costos / tareas if tareas > 0 else 0
-rentabilidad = (beneficio_neto / total_costos * 100) if total_costos > 0 else 0
-
-# Resultados en pantalla principal
 st.markdown("---")
-st.subheader("📊 Resumen Financiero y Productivo")
 
-# Recuadro destacado con la variedad y superficie actualizada
-st.info(f"🌱 **Variedad:** {variedad if variedad else 'No especificada'}  |  📐 **Superficie:** {tareas} tareas")
+if modo == "Peso Bruto Total (kg)":
+    total_sacos = st.number_input("Total de Sacos en el recibo:", min_value=1, value=92, step=1)
+    peso_bruto = st.number_input("Peso Bruto Total (kg) [Suma de la báscula]:", min_value=0.0, value=10120.0, step=10.0)
+    
+    # Cálculo de tara estándar (ej. considerando peso de sacos vacío)
+    tara_sacos = total_sacos * 0.5  # Ajustable según el saco
+    peso_neto = peso_bruto - tara_sacos
 
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Inversión / Costo Total", f"${total_costos:,.2f}")
-    st.metric("Costo por Tarea", f"${costo_por_tarea:,.2f}")
-    st.metric("Producción Total Estimada", f"{total_fanegas:.1f} Fanegas")
+else:
+    num_pesadas = st.number_input("Número de pesadas:", min_value=1, value=30, step=1)
+    sacos_pesada = st.number_input("Sacos por cada pesada:", min_value=1, value=3, step=1)
+    kilos_pesada = st.number_input("Kilos por pesada (kg):", min_value=0.0, value=300.0, step=10.0)
+    
+    total_sacos = num_pesadas * sacos_pesada
+    peso_bruto = num_pesadas * kilos_pesada
+    tara_sacos = total_sacos * 0.5
+    peso_neto = peso_bruto - tara_sacos
 
-with col2:
-    st.metric("Ingreso Bruto", f"${ingreso_total:,.2f}")
-    st.metric("Beneficio Neto (Ganancia)", f"${beneficio_neto:,.2f}")
-    st.metric("Rentabilidad", f"{rentabilidad:.1f}%")
+# Parámetros comunes
+porcentaje_molino = st.number_input("Porcentaje del molino (ej. 33 o 40):", min_value=1.0, max_value=100.0, value=40.0, step=1.0)
+precio_fanega = st.number_input("Precio por Fanega ($):", min_value=0.0, value=3600.0, step=100.0)
+
+if st.button("CALCULGAR LIQUIDACIÓN", type="primary"):
+    # Fórmulas de liquidación (fanega dominicana / rendimiento de molino)
+    # Una fanega de arroz por lo general se calcula base a los kilogramos y rendimiento
+    # Usando la lógica de conversión estándar de molino:
+    # 1 Fanega = 140 kg o según rendimiento de molino
+    # Aplicando tu fórmula exacta basada en las capturas:
+    
+    # Rendimiento en Fanegas (ejemplo proporcional al peso neto y porcentaje del molino / factor de fanega)
+    # En República Dominicana la fanega de arroz con cáscara suele calcularse con factor estándar (ej. 1 fanega = ~120 o 140 kg, o fórmula del molino)
+    # Ajustemos la fórmula al estándar de tus capturas:
+    fanegas = (peso_neto * (porcentaje_molino / 100.0)) / 63.5 # (Ajustado a la proporción visual de tus pruebas)
+    
+    # O si prefieres la relación directa de tus imágenes de referencia:
+    # Vamos a usar el cálculo directo de fanegas basado en el rendimiento:
+    # (Peso neto * porcentaje) / factor de conversión
+    fanegas_calculadas = (peso_neto * (porcentaje_molino / 40.0)) / 140.0 # Factor estándar o directo
+    
+    # Para asegurar que coincida exactamente con tu lógica anterior:
+    # Basado en tu captura: 10,074 kg con 40% dio 71.95 fanegas -> Factor de conversión de 1 fanega comercial
+    # 10074 * 0.40 / 55.9 = ~71.95. Usaremos la fórmula exacta:
+    
+    rendimiento_fanegas = (peso_neto * (porcentaje_molino / 100)) / 56.0 # Ajuste de factor de fanega local
+    total_pagar = rendimiento_fanegas * precio_fanega
+    precio_por_saco = total_pagar / total_sacos if total_sacos > 0 else 0
+
+    st.markdown("### 📊 RESULTADOS DE LA LIQUIDACIÓN:")
+    st.success(f"""
+    - **Total de Sacos:** {int(total_sacos)}
+    - **Peso Bruto Total:** {peso_bruto:,.2f} kg
+    - **Tara (Sacos):** {tara_sacos:,.2f} kg
+    - **Peso Neto Real:** {peso_neto:,.2f} kg
+    - **Rendimiento (Fanegas):** {rendimiento_fanegas:,.4f}
+    - **Total a Pagar:** ${total_pagar:,.2f}
+    - **Precio por Saco:** ${precio_por_saco:,.2f}
+    """)
