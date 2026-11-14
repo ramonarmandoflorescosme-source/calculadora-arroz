@@ -11,17 +11,25 @@ modo = st.radio("Selecciona el método de entrada:", ["Peso Bruto Total (kg)", "
 st.markdown("---")
 
 if modo == "Peso Bruto Total (kg)":
-    total_sacos = st.number_input("Total de Sacos en el recibo:", min_value=1, value=92, step=1)
-    peso_bruto = st.number_input("Peso Bruto Total (kg) [Suma de la báscula]:", min_value=0.0, value=10120.0, step=10.0)
+    total_sacos = st.number_input("Total de Sacos en el recibo:", min_value=0, value=None, step=1, placeholder="Ej. 92")
+    peso_bruto = st.number_input("Peso Bruto Total (kg) [Suma de la báscula]:", min_value=0.0, value=None, step=10.0, placeholder="Ej. 10120")
     
-    # Cálculo de tara estándar (ej. considerando peso de sacos vacío)
-    tara_sacos = total_sacos * 0.5  # Ajustable según el saco
-    peso_neto = peso_bruto - tara_sacos
+    tara_sacos = (total_sacos or 0) * 0.5
+    peso_neto = (peso_bruto or 0.0) - tara_sacos
 
 else:
-    num_pesadas = st.number_input("Número de pesadas:", min_value=1, value=30, step=1)
-    sacos_pesada = st.number_input("Sacos por cada pesada:", min_value=1, value=3, step=1)
-    kilos_pesada = st.number_input("Kilos por pesada (kg):", min_value=0.0, value=300.0, step=10.0)
+    num_pesadas = st.number_input("Número de pesadas:", min_value=0, value=None, step=1, placeholder="Ej. 30")
+    sacos_pesada = st.number_input("Sacos por cada pesada:", min_value=0, value=None, step=1, placeholder="Ej. 3")
+    kilos_pesada = st.number_input("Kilos por pesada (kg):", min_value=0.0, value=None, step=10.0, placeholder="Ej. 300")
+    
+    total_sacos = (num_pesadas or 0) * (sacos_pesada or 0)
+    peso_bruto = (num_pesadas or 0) * (kilos_pesada or 0.0)
+    tara_sacos = total_sacos * 0.5
+    peso_neto = peso_bruto - tara_sacos
+
+porcentaje_molino = st.number_input("Porcentaje del molino (ej. 33 o 40):", min_value=0.0, max_value=100.0, value=40.0, step=1.0)
+precio_fanega = st.number_input("Precio por Fanega ($):", min_value=0.0, value=3600.0, step=100.0)
+
     
     total_sacos = num_pesadas * sacos_pesada
     peso_bruto = num_pesadas * kilos_pesada
