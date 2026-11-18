@@ -16,14 +16,8 @@ st.write(
     "Sistema inteligente de liquidación y escaneo de recibos para el sector arrocero."
 )
 
-# Barra lateral para configuración
-st.sidebar.markdown("### ⚙️ Configuración de Escaneo")
-api_key_input = st.sidebar.text_input(
-    "Tu API Key de Gemini:", type="password"
-)
-
-# Definir la API Key (prioriza la barra lateral, luego secrets si los hubiera)
-gemini_key = api_key_input or st.secrets.get("GEMINI_API_KEY", "")
+# La API Key se toma directamente de los secrets de Streamlit Cloud de forma automática y segura
+gemini_key = st.secrets.get("GEMINI_API_KEY", "")
 
 # Sección principal: Carga de recibo o cuaderno
 st.markdown("### 📸 Escaneo de Recibo / Cuaderno")
@@ -39,19 +33,17 @@ if uploaded_file is not None:
       st.image(image, caption="Recibo cargado", use_container_width=True)
 
     if not gemini_key:
-      st.warning(
-          "⚠️ Falta la API Key: Ingrésala en la barra lateral izquierda (⚙️"
-          " Configuración de Escaneo) para que la IA lea la foto"
-          " automáticamente."
+      st.error(
+          "⚠️ No se encontró la GEMINI_API_KEY configurada en los Secrets de"
+          " Streamlit Cloud."
       )
     else:
-      # Lógica de procesamiento con Gemini con el modelo actualizado
+      # Lógica de procesamiento con Gemini
       import google.generativeai as genai
 
       genai.configure(api_key=gemini_key)
 
       with st.spinner("Leyendo recibo con inteligencia artificial..."):
-        # Usando el modelo correcto gemini-3.8-flash
         model = genai.GenerativeModel("gemini-3.8-flash")
         prompt = (
             "Extrae los datos clave de este recibo de arroz: nombre del"
