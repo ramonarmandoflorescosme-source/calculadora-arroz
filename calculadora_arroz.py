@@ -4,8 +4,12 @@ from datetime import date, datetime
 from html import escape
 import json
 from PIL import Image
+import pillow_heif
 from google import genai
 from google.genai import types
+
+# Registrar soporte para abrir fotos .HEIC directamente desde el celular
+pillow_heif.register_heif_opener()
 
 str_lit.set_page_config(
     page_title="Liquidación de Arroz",
@@ -19,7 +23,7 @@ str_lit.set_page_config(
 with str_lit.sidebar:
     str_lit.header("⚙️ Configuración de Escaneo")
     api_key = str_lit.text_input("Tu API Key de Gemini:", type="password", help="Necesaria para leer las fotos de facturas reales automáticamente.")
-    str_lit.caption("Ingresa tu API key para activar la lectura de la foto.")
+    str_lit.caption("Ingresa tu API key para activar la lectura automática de la foto.")
 
 str_lit.title("🌾 LIQUIDADORA DE ARROZ")
 str_lit.write("Sistema de cálculo y control con escaneo inteligente de recibos oficiales.")
@@ -62,8 +66,8 @@ def analizar_factura_arroz(imagen_pil, clave_api):
 # ==================================
 str_lit.header("📸 Escaneo de Recibo / Cuaderno")
 foto_recibo = str_lit.file_uploader(
-    "Sube una foto de la factura oficial (JPG o PNG):",
-    type=["jpg", "jpeg", "png"]
+    "Sube una foto de la factura oficial (JPG, PNG o HEIC):",
+    type=["jpg", "jpeg", "png", "heic"]
 )
 
 # Valores por defecto
