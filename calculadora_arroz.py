@@ -3,6 +3,31 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Liquidación de Arroz", page_icon="🌾", layout="centered")
 
+# Estilo CSS para ocultar los elementos de Streamlit al imprimir y mostrar solo el recibo en una página
+st.markdown("""
+    <style>
+    @media print {
+        /* Ocultar la barra lateral, botones superiores y menús de Streamlit */
+        header, [data-testid="stSidebar"], .stButton, .stNumberInput, footer, hr {
+            display: none !important;
+        }
+        /* Asegurar que el contenedor principal ocupe toda la hoja limpia */
+        body, html, [data-testid="stAppViewContainer"] {
+            background-color: white !important;
+            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Forzar salto de página limpio */
+        .recibo-impresion {
+            page-break-inside: avoid;
+            margin: 0 auto;
+            width: 100%;
+        }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🌾 Calculadora de Liquidación de Arroz")
 st.markdown("---")
 
@@ -56,58 +81,9 @@ if st.button("Calcular Liquidación", type="primary"):
 # Si ya se calculó, mostramos los resultados fijos en la pantalla
 if st.session_state.calculado:
     st.markdown("---")
-    st.subheader("📊 Resultado de la Liquidación")
     
-    st.metric(label="Total a Pagar", value=f"RD$ {st.session_state.total_a_pagar:,.2f}")
+    # Envolvemos el resultado en un div con clase para la impresión limpia
+    st.markdown('<div class="recibo-impresion">', unsafe_allow_html=True)
+    st.subheader("📊 Resultado de la Liquidación (Recibo)")
     
-    # Tabla de resultados
-    texto_resultado = f"""
-| Concepto | Resultado |
-| :--- | :--- |
-| **Total de sacos** | {st.session_state.total_sacos:,} |
-| **Peso bruto** | {st.session_state.peso_bruto:,.2f} kg |
-| **Tara por saco (Constante)** | {st.session_state.tara_por_saco:,.2f} kg |
-| **Descuento de tara** | {st.session_state.descuento_tara:,.2f} kg |
-| **Peso neto** | {st.session_state.peso_neto:,.2f} kg |
-| **Divisor aplicado** | {st.session_state.divisor_porcentaje} |
-| **Rendimiento** | {st.session_state.rendimiento_fanegas:,.4f} fanegas |
-| **Precio por fanega** | RD$ {st.session_state.precio_fanega:,.2f} |
-| **Precio por saco** | RD$ {st.session_state.precio_por_saco:,.2f} |
-| **TOTAL A PAGAR** | **RD$ {st.session_state.total_a_pagar:,.2f}** |
-"""
-    st.markdown(texto_resultado)
-
-    st.markdown("### 🖨️ Opciones y Descarga")
-    
-    # Botón para descargar en archivo de texto
-    archivo_txt = texto_resultado.replace("|", "").replace("**", "")
-    st.download_button(
-        label="📥 Descargar Liquidación en Texto",
-        data=archivo_txt,
-        file_name="liquidacion_arroz.txt",
-        mime="text/plain"
-    )
-    
-    # Botón funcional de Impresión mediante un componente HTML/JS seguro
-    boton_imprimir_html = """
-    <script>
-    function triggerPrint() {
-        window.parent.print();
-    }
-    </script>
-    <button onclick="triggerPrint()" style="
-        width: 100%;
-        background-color: #ff4b4b;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 10px;
-    ">
-        🖨️ Imprimir Factura / Recibo
-    </button>
-    """
-    components.html(boton_imprimir_html, height=60)
+    st.metric(label="Total a Pagar",
