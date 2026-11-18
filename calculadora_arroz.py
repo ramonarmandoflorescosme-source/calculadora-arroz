@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 from datetime import date
@@ -197,7 +196,7 @@ if "liquidacion" in st.session_state:
     )
 
     # ==================================
-    # 6. COMPROBANTE PARA IMPRIMIR
+    # 6. COMPROBANTE PARA IMPRIMIR Y DESCARGAR
     # ==================================
 
     st.markdown("---")
@@ -209,11 +208,16 @@ if "liquidacion" in st.session_state:
         d["observaciones"]
     ).replace("\n", "<br>")
 
+    # Nombre limpio para el archivo PNG descargado
+    num_recibo_limpio = escape(d["numero_recibo"].strip()) if d["numero_recibo"].strip() else "sin_numero"
+    nombre_archivo = f"Liquidacion_Arroz_{num_recibo_limpio}.png"
+
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
     <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
 
@@ -226,12 +230,14 @@ if "liquidacion" in st.session_state:
             color: #222;
             margin: 0;
             padding: 0;
+            background: transparent;
         }}
 
         .recibo {{
             width: 100%;
             max-width: 700px;
             margin: auto;
+            background: #ffffff;
             border: 1px solid #999;
             padding: 18px;
             font-size: 11px;
@@ -322,18 +328,34 @@ if "liquidacion" in st.session_state:
         }}
 
         .no-imprimir {{
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
             margin-top: 15px;
         }}
 
-        .boton-imprimir {{
-            padding: 12px 25px;
-            font-size: 16px;
-            background: #168342;
+        .boton-accion {{
+            padding: 12px 22px;
+            font-size: 15px;
+            font-weight: bold;
             color: white;
             border: 0;
             border-radius: 6px;
             cursor: pointer;
+            transition: opacity 0.2s;
+        }}
+
+        .boton-accion:hover {{
+            opacity: 0.9;
+        }}
+
+        .boton-imprimir {{
+            background: #168342;
+        }}
+
+        .boton-descargar {{
+            background: #0d6efd;
         }}
 
         /* IMPRESION EN UNA SOLA PAGINA */
@@ -441,7 +463,7 @@ if "liquidacion" in st.session_state:
 
     <body>
 
-    <div class="recibo">
+    <div class="recibo" id="comprobante-captura">
 
         <h1>🌾 LIQUIDADORA DE ARROZ</h1>
 
@@ -571,14 +593,49 @@ if "liquidacion" in st.session_state:
     <div class="no-imprimir">
 
         <button
-            class="boton-imprimir"
+            class="boton-accion boton-imprimir"
             onclick="window.print()">
-
             🖨️ IMPRIMIR COMPROBANTE
+        </button>
 
+        <button
+            id="btn-descargar"
+            class="boton-accion boton-descargar"
+            onclick="descargarImagen()">
+            📥 DESCARGAR IMAGEN (PNG)
         </button>
 
     </div>
+
+    <script>
+        function descargarImagen() {{
+            const btn = document.getElementById("btn-descargar");
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Generando imagen...";
+            btn.disabled = true;
+
+            const elemento = document.getElementById("comprobante-captura");
+
+            html2canvas(elemento, {{
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true
+            }}).then(canvas => {{
+                const enlace = document.createElement("a");
+                enlace.download = "{nombre_archivo}";
+                enlace.href = canvas.toDataURL("image/png");
+                enlace.click();
+
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }}).catch(err => {{
+                console.error("Error al generar la imagen:", err);
+                alert("Hubo un problema al generar la imagen.");
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }});
+        }}
+    </script>
 
     </body>
     </html>
@@ -586,7 +643,7 @@ if "liquidacion" in st.session_state:
 
     components.html(
         html,
-        height=1000,
+        height=1050,
         scrolling=True
     )
 
