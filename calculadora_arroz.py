@@ -3,10 +3,11 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Liquidación de Arroz", page_icon="🌾", layout="centered")
 
-# Estilo CSS para la impresión limpia y para darle un fondo blanco al recibo al capturarlo como imagen
+# Estilo CSS optimizado para forzar que la impresión quepa perfectamente en UNA sola página
 st.markdown("""
     <style>
     @media print {
+        /* Ocultar elementos innecesarios de la interfaz */
         header, [data-testid="stSidebar"], .stButton, .stNumberInput, footer, hr {
             display: none !important;
         }
@@ -15,11 +16,20 @@ st.markdown("""
             color: black !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: 100% !important;
         }
+        /* Forzar que el recibo esté contenido y no salte de página */
         .recibo-impresion {
-            page-break-inside: avoid;
-            margin: 0 auto;
-            width: 100%;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-height: 100vh !important;
+            padding: 10px !important;
+        }
+        @page {
+            size: auto;
+            margin: 10mm;
         }
     }
     .recibo-impresion {
@@ -75,7 +85,7 @@ if st.button("Calcular Liquidación", type="primary"):
 if st.session_state.calculado:
     st.markdown("---")
     
-    # Contenedor del recibo con ID único para que html2canvas pueda capturarlo como imagen
+    # Contenedor del recibo para captura e impresión
     st.markdown('<div id="recibo-captura" class="recibo-impresion">', unsafe_allow_html=True)
     st.subheader("📊 Resultado de la Liquidación (Recibo)")
     
@@ -100,7 +110,6 @@ if st.session_state.calculado:
 
     st.markdown("### 🖨️ Opciones y Descarga")
     
-    # Botón para descargar en archivo de texto
     archivo_txt = texto_resultado.replace("|", "").replace("**", "")
     st.download_button(
         label="📥 Descargar Liquidación en Texto",
@@ -109,14 +118,12 @@ if st.session_state.calculado:
         mime="text/plain"
     )
     
-    # Componente con botones para Descargar Imagen y para Imprimir limpia una sola página
     botones_html = """
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     function descargarImagen() {
         const elemento = window.parent.document.getElementById('recibo-captura');
         if (!elemento) {
-            // Buscador alternativo si está dentro de un iframe complejo
             const el = document.getElementById('recibo-captura');
             capturar(el || document.body);
             return;
