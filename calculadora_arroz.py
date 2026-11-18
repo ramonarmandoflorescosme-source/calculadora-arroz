@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Liquidación de Arroz", page_icon="🌾", layout="centered")
 
-# Estilo CSS para ocultar los elementos de Streamlit al imprimir y mostrar solo el recibo en una página
+# Estilo CSS para la impresión limpia y para darle un fondo blanco al recibo al capturarlo como imagen
 st.markdown("""
     <style>
     @media print {
@@ -21,6 +21,12 @@ st.markdown("""
             margin: 0 auto;
             width: 100%;
         }
+    }
+    .recibo-impresion {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        color: black;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -69,7 +75,8 @@ if st.button("Calcular Liquidación", type="primary"):
 if st.session_state.calculado:
     st.markdown("---")
     
-    st.markdown('<div class="recibo-impresion">', unsafe_allow_html=True)
+    # Contenedor del recibo con ID único para que html2canvas pueda capturarlo como imagen
+    st.markdown('<div id="recibo-captura" class="recibo-impresion">', unsafe_allow_html=True)
     st.subheader("📊 Resultado de la Liquidación (Recibo)")
     
     st.metric(label="Total a Pagar", value=f"RD$ {st.session_state.total_a_pagar:,.2f}")
@@ -93,6 +100,7 @@ if st.session_state.calculado:
 
     st.markdown("### 🖨️ Opciones y Descarga")
     
+    # Botón para descargar en archivo de texto
     archivo_txt = texto_resultado.replace("|", "").replace("**", "")
     st.download_button(
         label="📥 Descargar Liquidación en Texto",
@@ -101,25 +109,63 @@ if st.session_state.calculado:
         mime="text/plain"
     )
     
-    boton_imprimir_html = """
+    # Componente con botones para Descargar Imagen y para Imprimir limpia una sola página
+    botones_html = """
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
+    function descargarImagen() {
+        const elemento = window.parent.document.getElementById('recibo-captura');
+        if (!elemento) {
+            // Buscador alternativo si está dentro de un iframe complejo
+            const el = document.getElementById('recibo-captura');
+            capturar(el || document.body);
+            return;
+        }
+        capturar(elemento);
+    }
+
+    function capturar(el) {
+        html2canvas(el, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'liquidacion_arroz.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
+
     function triggerPrint() {
         window.parent.print();
     }
     </script>
-    <button onclick="triggerPrint()" style="
-        width: 100%;
-        background-color: #ff4b4b;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 10px;
-    ">
-        🖨️ Imprimir Recibo en una Sola Página
-    </button>
+    
+    <div style="display: flex; gap: 10px; margin-top: 10px; flex-direction: column;">
+        <button onclick="descargarImagen()" style="
+            width: 100%;
+            background-color: #2e7d32;
+            color: white;
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+        ">
+            📸 Descargar Recibo como Imagen (PNG)
+        </button>
+
+        <button onclick="triggerPrint()" style="
+            width: 100%;
+            background-color: #ff4b4b;
+            color: white;
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+        ">
+            🖨️ Imprimir Recibo en una Sola Página
+        </button>
+    </div>
     """
-    components.html(boton_imprimir_html, height=60)
+    components.html(botones_html, height=130)
