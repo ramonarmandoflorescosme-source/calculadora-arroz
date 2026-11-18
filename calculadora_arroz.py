@@ -4,12 +4,8 @@ from datetime import date, datetime
 from html import escape
 import json
 from PIL import Image
-import pillow_heif
 from google import genai
 from google.genai import types
-
-# Habilitar soporte para .HEIC de iPhone/Samsung
-pillow_heif.register_heif_opener()
 
 str_lit.set_page_config(
     page_title="Liquidación de Arroz",
@@ -66,8 +62,8 @@ def analizar_factura_arroz(imagen_pil, clave_api):
 # ==================================
 str_lit.header("📸 Escaneo de Recibo / Cuaderno")
 foto_recibo = str_lit.file_uploader(
-    "Sube una foto de la factura oficial (JPG, PNG o HEIC):",
-    type=["jpg", "jpeg", "png", "heic"]
+    "Sube una foto de la factura oficial (JPG o PNG):",
+    type=["jpg", "jpeg", "png"]
 )
 
 # Valores por defecto
@@ -97,7 +93,7 @@ if foto_recibo is not None:
                     str_lit.success("¡Factura leída con éxito! Revisa los datos abajo.")
                     str_lit.rerun()
         else:
-            str_lit.warning("⚠️ **Falta la API Key:** Ingresala en la barra lateral izquierda (⚙️ Configuración de Escaneo) para que la IA lea la foto automáticamente.")
+            str_lit.warning("⚠️ **Falta la API Key:** Ingrésala en la barra lateral izquierda (⚙️ Configuración de Escaneo) para que la IA lea la foto automáticamente.")
     except Exception as e:
         str_lit.error(f"Error procesando la imagen: {e}")
 
@@ -396,4 +392,3 @@ str_lit.markdown(
     '<div style="text-align:center; color:gray; font-size:15px; font-weight:bold; letter-spacing:1px; padding:12px;">🌾 CREADA POR RAFC © 2026</div>',
     unsafe_allow_html=True
 )
-
