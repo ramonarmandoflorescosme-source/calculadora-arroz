@@ -1,6 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
-from datetime import date
+from datetime import date, datetime
 from html import escape
 
 st.set_page_config(
@@ -30,7 +30,7 @@ variedad = st.text_input("Variedad de arroz:")
 st.markdown("---")
 
 # ==================================
-# 2. METODO DE ENTRADA
+# 2. METODO DE ENTRADA DE PESO
 # ==================================
 
 st.header("⚖️ Datos del peso")
@@ -96,13 +96,31 @@ tara_por_saco = st.number_input(
     step=0.1
 )
 
-porcentaje_molino = st.number_input(
-    "Porcentaje del molino (%):",
-    min_value=0.0,
-    max_value=100.0,
-    value=40.0,
-    step=1.0
+metodo_rendimiento = st.radio(
+    "Método para calcular rendimiento (fanegas):",
+    ["Por Factor Divisor (ej. 130, 140)", "Por Porcentaje del Molino (%)"],
+    horizontal=True
 )
+
+if metodo_rendimiento == "Por Factor Divisor (ej. 130, 140)":
+    st.caption("A menor factor (arroz más seco), mayor cantidad de fanegas.")
+    factor_divisor = st.number_input(
+        "Factor divisor (Peso neto ÷ Factor):",
+        min_value=1.0,
+        value=130.0,
+        step=1.0
+    )
+    porcentaje_equivalente = (56.0 / factor_divisor) * 100
+    st.info(f"Equivale a un **{porcentaje_equivalente:.2f}%** de rendimiento de molino.")
+else:
+    porcentaje_molino = st.number_input(
+        "Porcentaje del molino (%):",
+        min_value=0.0,
+        max_value=100.0,
+        value=40.0,
+        step=1.0
+    )
+    factor_divisor = (56.0 / (porcentaje_molino / 100)) if porcentaje_molino > 0 else 0
 
 precio_fanega = st.number_input(
     "Precio por fanega (RD$):",
@@ -111,15 +129,19 @@ precio_fanega = st.number_input(
     step=100.0
 )
 
-observaciones = st.text_area("Observaciones:")
+observaciones = st.text_area("Observaciones (ej. Humedad estimada, calidad del grano):")
 
 # ==================================
-# 4. CALCULAR LIQUIDACION
+# 4. CALCULAR LIQUIDACION (INDEPENDIENTE)
 # ==================================
 
 st.markdown("---")
 
 if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
+
+    # Limpiamos cualquier cálculo anterior para asegurar independencia total
+    if "liquidacion" in st.session_state:
+        del st.session_state["liquidacion"]
 
     if total_sacos <= 0 or peso_bruto <= 0:
 
@@ -131,14 +153,23 @@ if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
 
         st.warning("El peso neto debe ser mayor que cero.")
 
+    elif metodo_rendimiento == "Por Porcentaje del Molino (%)" and porcentaje_molino <= 0:
+
+        st.warning("El porcentaje del molino debe ser mayor que cero.")
+
     else:
 
         tara_sacos = total_sacos * tara_por_saco
         peso_neto = peso_bruto - tara_sacos
 
-        rendimiento_fanegas = (
-            peso_neto * (porcentaje_molino / 100)
-        ) / 56.0
+        if metodo_rendimiento == "Por Factor Divisor (ej. 130, 140)":
+            rendimiento_fanegas = peso_neto / factor_divisor
+            etiqueta_factor = "Factor divisor aplicado"
+            valor_factor = f"{factor_divisor:.2f} ({porcentaje_equivalente:.2f}%)"
+        else:
+            rendimiento_fanegas = (peso_neto * (porcentaje_molino / 100)) / 56.0
+            etiqueta_factor = "Porcentaje del molino"
+            valor_factor = f"{porcentaje_molino:.2f}% (Factor {factor_divisor:.2f})"
 
         total_pagar = rendimiento_fanegas * precio_fanega
         precio_por_saco = total_pagar / total_sacos
@@ -149,6 +180,7 @@ if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
             "molino": molino,
             "numero_recibo": numero_recibo,
             "fecha": fecha_recibo.strftime("%d/%m/%Y"),
+            "hora_calculo": datetime.now().strftime("%I:%M:%S %p"),
             "variedad": variedad,
             "modo": modo,
             "total_sacos": total_sacos,
@@ -156,7 +188,8 @@ if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
             "tara_por_saco": tara_por_saco,
             "tara_sacos": tara_sacos,
             "peso_neto": peso_neto,
-            "porcentaje_molino": porcentaje_molino,
+            "etiqueta_factor": etiqueta_factor,
+            "valor_factor": valor_factor,
             "rendimiento": rendimiento_fanegas,
             "precio_fanega": precio_fanega,
             "total_pagar": total_pagar,
@@ -175,25 +208,25 @@ if "liquidacion" in st.session_state:
     st.markdown("---")
     st.header("📊 RESULTADOS DE LA LIQUIDACIÓN")
 
-    st.metric(
-        "Peso neto real",
-        f"{datos['peso_neto']:,.2f} kg"
-    )
-
-    st.metric(
-        "Rendimiento",
-        f"{datos['rendimiento']:,.4f} fanegas"
-    )
-
-    st.metric(
-        "Total a pagar",
-        f"RD$ {datos['total_pagar']:,.2f}"
-    )
-
-    st.metric(
-        "Precio por saco",
-        f"RD$ {datos['precio_por_saco']:,.2f}"
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(
+            "Peso neto real",
+            f"{datos['peso_neto']:,.2f} kg"
+        )
+        st.metric(
+            "Total a pagar",
+            f"RD$ {datos['total_pagar']:,.2f}"
+        )
+    with col2:
+        st.metric(
+            "Rendimiento",
+            f"{datos['rendimiento']:,.4f} fanegas"
+        )
+        st.metric(
+            "Precio por saco",
+            f"RD$ {datos['precio_por_saco']:,.2f}"
+        )
 
     # ==================================
     # 6. COMPROBANTE PARA IMPRIMIR Y DESCARGAR
@@ -208,7 +241,6 @@ if "liquidacion" in st.session_state:
         d["observaciones"]
     ).replace("\n", "<br>")
 
-    # Nombre limpio para el archivo PNG descargado
     num_recibo_limpio = escape(d["numero_recibo"].strip()) if d["numero_recibo"].strip() else "sin_numero"
     nombre_archivo = f"Liquidacion_Arroz_{num_recibo_limpio}.png"
 
@@ -236,10 +268,10 @@ if "liquidacion" in st.session_state:
         .recibo {{
             width: 100%;
             max-width: 700px;
-            margin: auto;
+            margin: 20px auto 15px auto;
             background: #ffffff;
             border: 1px solid #999;
-            padding: 18px;
+            padding: 20px 18px;
             font-size: 11px;
         }}
 
@@ -249,7 +281,7 @@ if "liquidacion" in st.session_state:
 
         h1 {{
             font-size: 19px;
-            margin: 3px 0;
+            margin: 6px 0 4px 0;
         }}
 
         h2 {{
@@ -333,6 +365,7 @@ if "liquidacion" in st.session_state:
             flex-wrap: wrap;
             gap: 12px;
             margin-top: 15px;
+            margin-bottom: 20px;
         }}
 
         .boton-accion {{
@@ -357,8 +390,6 @@ if "liquidacion" in st.session_state:
         .boton-descargar {{
             background: #0d6efd;
         }}
-
-        /* IMPRESION EN UNA SOLA PAGINA */
 
         @page {{
             size: letter portrait;
@@ -490,7 +521,7 @@ if "liquidacion" in st.session_state:
             {escape(d['numero_recibo'])}<br>
 
             <b>FECHA:</b>
-            {escape(d['fecha'])}<br>
+            {escape(d['fecha'])} ({escape(d['hora_calculo'])})<br>
 
             <b>VARIEDAD DE ARROZ:</b>
             {escape(d['variedad'])}
@@ -534,8 +565,8 @@ if "liquidacion" in st.session_state:
             </tr>
 
             <tr>
-                <td>Porcentaje del molino</td>
-                <td>{d['porcentaje_molino']:.2f}%</td>
+                <td>{d['etiqueta_factor']}</td>
+                <td>{d['valor_factor']}</td>
             </tr>
 
             <tr>
@@ -643,7 +674,7 @@ if "liquidacion" in st.session_state:
 
     components.html(
         html,
-        height=1050,
+        height=1080,
         scrolling=True
     )
 
