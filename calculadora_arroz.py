@@ -96,31 +96,15 @@ tara_por_saco = st.number_input(
     step=0.1
 )
 
-metodo_rendimiento = st.radio(
-    "Método para calcular rendimiento (fanegas):",
-    ["Por Factor Divisor (ej. 130, 140)", "Por Porcentaje del Molino (%)"],
-    horizontal=True
+st.caption("A menor factor (arroz más seco), mayor cantidad de fanegas.")
+factor_divisor = st.number_input(
+    "Factor divisor (Peso neto ÷ Factor, ej. 130, 140):",
+    min_value=1.0,
+    value=130.0,
+    step=1.0
 )
-
-if metodo_rendimiento == "Por Factor Divisor (ej. 130, 140)":
-    st.caption("A menor factor (arroz más seco), mayor cantidad de fanegas.")
-    factor_divisor = st.number_input(
-        "Factor divisor (Peso neto ÷ Factor):",
-        min_value=1.0,
-        value=130.0,
-        step=1.0
-    )
-    porcentaje_equivalente = (56.0 / factor_divisor) * 100
-    st.info(f"Equivale a un **{porcentaje_equivalente:.2f}%** de rendimiento de molino.")
-else:
-    porcentaje_molino = st.number_input(
-        "Porcentaje del molino (%):",
-        min_value=0.0,
-        max_value=100.0,
-        value=40.0,
-        step=1.0
-    )
-    factor_divisor = (56.0 / (porcentaje_molino / 100)) if porcentaje_molino > 0 else 0
+porcentaje_equivalente = (56.0 / factor_divisor) * 100
+st.info(f"Equivale a un rendimiento estimado de **{porcentaje_equivalente:.2f}%**.")
 
 precio_fanega = st.number_input(
     "Precio por fanega (RD$):",
@@ -153,23 +137,18 @@ if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
 
         st.warning("El peso neto debe ser mayor que cero.")
 
-    elif metodo_rendimiento == "Por Porcentaje del Molino (%)" and porcentaje_molino <= 0:
+    elif factor_divisor <= 0:
 
-        st.warning("El porcentaje del molino debe ser mayor que cero.")
+        st.warning("El factor divisor debe ser mayor que cero.")
 
     else:
 
         tara_sacos = total_sacos * tara_por_saco
         peso_neto = peso_bruto - tara_sacos
 
-        if metodo_rendimiento == "Por Factor Divisor (ej. 130, 140)":
-            rendimiento_fanegas = peso_neto / factor_divisor
-            etiqueta_factor = "Factor divisor aplicado"
-            valor_factor = f"{factor_divisor:.2f} ({porcentaje_equivalente:.2f}%)"
-        else:
-            rendimiento_fanegas = (peso_neto * (porcentaje_molino / 100)) / 56.0
-            etiqueta_factor = "Porcentaje del molino"
-            valor_factor = f"{porcentaje_molino:.2f}% (Factor {factor_divisor:.2f})"
+        rendimiento_fanegas = peso_neto / factor_divisor
+        etiqueta_factor = "Factor divisor aplicado"
+        valor_factor = f"{factor_divisor:.2f} (Equiv. {porcentaje_equivalente:.2f}%)"
 
         total_pagar = rendimiento_fanegas * precio_fanega
         precio_por_saco = total_pagar / total_sacos
