@@ -96,15 +96,13 @@ tara_por_saco = st.number_input(
     step=0.1
 )
 
-st.caption("A menor factor (arroz más seco), mayor cantidad de fanegas.")
+st.caption("A menor factor divisor, mayor cantidad de fanegas.")
 factor_divisor = st.number_input(
     "Factor divisor (Peso neto ÷ Factor, ej. 130, 140):",
     min_value=1.0,
     value=130.0,
     step=1.0
 )
-porcentaje_equivalente = (56.0 / factor_divisor) * 100
-st.info(f"Equivale a un rendimiento estimado de **{porcentaje_equivalente:.2f}%**.")
 
 precio_fanega = st.number_input(
     "Precio por fanega (RD$):",
@@ -148,7 +146,7 @@ if st.button("CALCULAR LIQUIDACIÓN", type="primary"):
 
         rendimiento_fanegas = peso_neto / factor_divisor
         etiqueta_factor = "Factor divisor aplicado"
-        valor_factor = f"{factor_divisor:.2f} (Equiv. {porcentaje_equivalente:.2f}%)"
+        valor_factor = f"{factor_divisor:.2f}"
 
         total_pagar = rendimiento_fanegas * precio_fanega
         precio_por_saco = total_pagar / total_sacos
