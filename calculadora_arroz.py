@@ -1,27 +1,34 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Liquidación de Arroz", page_icon="🌾", layout="centered")
 
 st.title("🌾 Calculadora de Liquidación de Arroz")
 st.markdown("---")
 
+# Constante fija para la tara por saco
+TARA_FIJA = 0.5  # Puedes cambiar este valor aquí si la tara constante es otra
+
 # Entradas del usuario en la interfaz
 total_sacos = st.number_input("Total de sacos", min_value=1, value=100, step=1)
 peso_bruto = st.number_input("Peso bruto (kg)", min_value=0.0, value=11500.0, step=10.0)
-tara_por_saco = st.number_input("Tara por saco (kg)", min_value=0.0, value=0.5, step=0.1)
+
+# Mostramos la tara como un valor fijo informativo
+st.text(f"Tara por saco (Constante): {TARA_FIJA} kg")
+
 divisor_porcentaje = st.number_input("Divisor por porcentaje (ej. 132 para 32%)", min_value=1.0, value=132.0, step=1.0)
 precio_fanega = st.number_input("Precio por fanega (RD$)", min_value=0.0, value=3600.0, step=50.0)
 
 st.markdown("")
 
-# Usamos st.session_state para guardar los resultados y que no se borren al interactuar
+# Usamos st.session_state para guardar los resultados y que no se pierdan al interactuar
 if "calculado" not in st.session_state:
     st.session_state.calculado = False
 
 # Botón de calcular
 if st.button("Calcular Liquidación", type="primary"):
-    # 1. Cálculo de tara y peso neto
-    descuento_tara = total_sacos * tara_por_saco
+    # 1. Cálculo de tara usando la constante fija y el peso neto
+    descuento_tara = total_sacos * TARA_FIJA
     peso_neto = peso_bruto - descuento_tara
     
     # 2. Cálculo de fanegas dividiendo el peso neto entre el divisor ingresado (ej. 132)
@@ -33,11 +40,11 @@ if st.button("Calcular Liquidación", type="primary"):
     # 4. Precio por saco equivalente
     precio_por_saco = total_a_pagar / total_sacos
 
-    # Guardamos todo en la sesión
+    # Guardamos todo en la sesión para que no desaparezca
     st.session_state.calculado = True
     st.session_state.total_sacos = total_sacos
     st.session_state.peso_bruto = peso_bruto
-    st.session_state.tara_por_saco = tara_por_saco
+    st.session_state.tara_por_saco = TARA_FIJA
     st.session_state.descuento_tara = descuento_tara
     st.session_state.peso_neto = peso_neto
     st.session_state.divisor_porcentaje = divisor_porcentaje
@@ -46,7 +53,7 @@ if st.button("Calcular Liquidación", type="primary"):
     st.session_state.precio_por_saco = precio_por_saco
     st.session_state.total_a_pagar = total_a_pagar
 
-# Si ya se calculó una vez, mantenemos los resultados fijos en la pantalla
+# Si ya se calculó, mostramos los resultados fijos en la pantalla
 if st.session_state.calculado:
     st.markdown("---")
     st.subheader("📊 Resultado de la Liquidación")
@@ -59,7 +66,7 @@ if st.session_state.calculado:
 | :--- | :--- |
 | **Total de sacos** | {st.session_state.total_sacos:,} |
 | **Peso bruto** | {st.session_state.peso_bruto:,.2f} kg |
-| **Tara por saco** | {st.session_state.tara_por_saco:,.2f} kg |
+| **Tara por saco (Constante)** | {st.session_state.tara_por_saco:,.2f} kg |
 | **Descuento de tara** | {st.session_state.descuento_tara:,.2f} kg |
 | **Peso neto** | {st.session_state.peso_neto:,.2f} kg |
 | **Divisor aplicado** | {st.session_state.divisor_porcentaje} |
@@ -70,10 +77,9 @@ if st.session_state.calculado:
 """
     st.markdown(texto_resultado)
 
-    # Botón o función para descargar en texto/CSV o facilitar la impresión
-    st.markdown("### 🖨️ Accpciones")
+    st.markdown("### 🖨️ Opciones y Descarga")
     
-    # Creamos un archivo descargable de texto con el resumen para que nunca se pierda
+    # Botón para descargar en archivo de texto
     archivo_txt = texto_resultado.replace("|", "").replace("**", "")
     st.download_button(
         label="📥 Descargar Liquidación en Texto",
@@ -82,4 +88,26 @@ if st.session_state.calculado:
         mime="text/plain"
     )
     
-    st.info("💡 Consejo para imprimir: Puedes presionar las teclas **Ctrl + P** en tu navegador para imprimir esta página directamente como factura o recibo.")
+    # Botón funcional de Impresión mediante un componente HTML/JS seguro
+    boton_imprimir_html = """
+    <script>
+    function triggerPrint() {
+        window.parent.print();
+    }
+    </script>
+    <button onclick="triggerPrint()" style="
+        width: 100%;
+        background-color: #ff4b4b;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+    ">
+        🖨️ Imprimir Factura / Recibo
+    </button>
+    """
+    components.html(boton_imprimir_html, height=60)
